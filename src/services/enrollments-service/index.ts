@@ -13,10 +13,15 @@ async function getAddressFromCEP(cep: string) {
   }
 
   const { logradouro, complemento, bairro, localidade, uf } = result.data;
+  const address = {
+    bairro,
+    cidade: localidade,
+    uf,
+    complemento,
+    logradouro,
+  };
 
-  return { logradouro, complemento, bairro, cidade: localidade, uf };
-
-  return;
+  return address;
 }
 
 async function getOneWithAddressByUserId(userId: number): Promise<GetOneWithAddressByUserIdResult> {
@@ -46,8 +51,11 @@ type GetAddressResult = Omit<Address, "createdAt" | "updatedAt" | "enrollmentId"
 async function createOrUpdateEnrollmentWithAddress(params: CreateOrUpdateEnrollmentWithAddress) {
   const enrollment = exclude(params, "address");
   const address = getAddressForUpsert(params.address);
-
-  //TODO - Verificar se o CEP é válido
+  ("");
+  const cep = await getAddressFromCEP(address.cep);
+  if (!cep.cidade) {
+    throw notFoundError();
+  }
   const newEnrollment = await enrollmentRepository.upsert(params.userId, enrollment, exclude(enrollment, "userId"));
 
   await addressRepository.upsert(newEnrollment.id, address, address);
